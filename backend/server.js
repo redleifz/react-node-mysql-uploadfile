@@ -1,61 +1,45 @@
-import express from "express";
-import mysql from "mysql";
-import cors from "cors";
-import multer from "multer";
-import path from "path";
+import express from 'express';
+import multer from 'multer';
+import cors from 'cors';
+import { v4 as uuidv4 } from 'uuid';
 
 const app = express();
-app.use(express.json());
-app.use(cors());
+const upload = multer({ dest: 'uploads/' });
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "public/images");
-    // cb(null, "/Users/jongjate/Desktop/images");
-  },
-  filename: (req, file, cb) => {
-    cb(
-      null,
-      file.fieldname + "_" + Date.now() + path.extname(file.originalname)
-    );
-  },
-});
+app.use(cors()); // Enable CORS for all routes
 
-const upload = multer({
-  storage: storage,
-});
-
-const db = mysql.createConnection({
-  host: "127.0.0.1",
-  user: "root",
-  password: "root",
-  database: "mydb",
-});
-
-db.connect((err) => {
-  if (err) {
-    console.error("Error connecting to MySQL:", err);
+app.post('/api/upload', upload.array('files'), (req, res) => {
+  let filesArray = [];
+  
+  try {
+    filesArray = JSON.parse(req.body.filesArray);
+  } catch (error) {
+    console.error('Error parsing filesArray:', error);
+    res.status(400).json({ error: 'Invalid filesArray' });
     return;
   }
 
-  console.log("Connected to MySQL database!");
-
-  // Start your server or perform any other actions here
-  // ...
-});
-
-app.post("/upload", upload.single("image"), (req, res) => {
-  const image = req.file.filename;
-  const sql = `INSERT INTO images (url) VALUES (?)`;
-  db.query(sql, [image], (err, result) => {
-    if (err) {
-      console.error(err);
-      return res.json({ status: "Error" }); // Update the response accordingly
+  const processedFilesArray = filesArray.map((filename) => {
+    if (!filename) {
+      return null;
     }
-    return res.json({ status: "Success" }); // Update the response accordingly
+    
+    const uniqueIdentifier = uuidv4();
+    const fileParts = filename.split('.');
+    const extension = fileParts.length > 1 ? fileParts.pop() : '';
+    const name = fileParts.join('.');
+    const modifiedFileName = `${name}-${uniqueIdentifier}.${extension}`;
+    return modifiedFileName;
   });
+
+  console.log(processedFilesArray)
+
+  // Process the files and processedFilesArray as needed
+  // ...
+
+  res.json({ message: 'Upload successful' });
 });
 
 app.listen(8080, () => {
-  console.log("Server running on port 8080");
+  console.log('Server is running on port 8080');
 });
