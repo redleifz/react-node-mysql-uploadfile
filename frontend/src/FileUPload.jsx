@@ -24,7 +24,7 @@ const FileUpload = () => {
       }
     });
 
-    console.log("Client-side files array:", filesArray);
+    // console.log("Client-side files array:", filesArray);
 
     // Append filesArray to the formData
     formData.append('filesArray', JSON.stringify(filesArray));
